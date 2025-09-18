@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://leafy-souffle-1035b1.netlify.app',
+  'https://pollappp.netlify.app/',
 ];
 
 const corsOptions = {
