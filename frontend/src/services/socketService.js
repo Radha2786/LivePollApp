@@ -39,7 +39,7 @@ class SocketService {
       console.log('SocketService: Creating new socket connection');
       
       // Determine server URL safely
-      const rawUrl ='http://localhost:5000';
+      const rawUrl ='https://livepollapp.onrender.com/';
 
       let serverUrl = rawUrl;
       try {
