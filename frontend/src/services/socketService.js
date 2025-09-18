@@ -1,5 +1,5 @@
-import { io } from 'socket.io-client';
-import { store } from '../store/store';
+import { io } from "socket.io-client";
+import { store } from "../store/store";
 import {
   setPoll,
   createPoll,
@@ -9,15 +9,13 @@ import {
   setPollHistory,
   setError,
   setUserAnswer,
-} from '../store/slices/pollSlice';
-import {
-  setConnectedUsers,
-} from '../store/slices/userSlice';
+} from "../store/slices/pollSlice";
+import { setConnectedUsers } from "../store/slices/userSlice";
 import {
   addMessage,
   setParticipants,
   setMessages,
-} from '../store/slices/chatSlice';
+} from "../store/slices/chatSlice";
 
 class SocketService {
   constructor() {
@@ -29,25 +27,28 @@ class SocketService {
     if (this.socket && this.socket.connected) {
       return this.socket;
     }
-    
-    
+
     if (this.socket) {
       this.socket.disconnect();
     }
 
     try {
-      console.log('SocketService: Creating new socket connection');
-      
+      console.log("SocketService: Creating new socket connection");
+
       // Determine server URL safely
-      const rawUrl ='https://livepollapp.onrender.com';
+      const rawUrl = "https://livepollapp.onrender.com";
 
       let serverUrl = rawUrl;
       try {
-        if (!/^https?:\/\//i.test(rawUrl) && typeof window !== 'undefined' && window.location?.origin) {
+        if (
+          !/^https?:\/\//i.test(rawUrl) &&
+          typeof window !== "undefined" &&
+          window.location?.origin
+        ) {
           serverUrl = new URL(rawUrl, window.location.origin).toString();
         }
       } catch (_) {}
-      
+
       // Use polling only for Vercel backends, WebSocket+polling elsewhere (e.g., Render)
       let usePollingOnly = false;
       try {
@@ -56,39 +57,53 @@ class SocketService {
       } catch (_) {
         usePollingOnly = /vercel\.app/i.test(serverUrl);
       }
-      const transportsToUse = usePollingOnly ? ['polling'] : ['websocket', 'polling'];
+      const transportsToUse = usePollingOnly
+        ? ["polling"]
+        : ["websocket", "polling"];
       const upgradeOption = usePollingOnly ? false : true;
-      console.log('SocketService: Using server URL:', serverUrl, 'transports:', transportsToUse, 'upgrade:', upgradeOption);
+      console.log(
+        "SocketService: Using server URL:",
+        serverUrl,
+        "transports:",
+        transportsToUse,
+        "upgrade:",
+        upgradeOption
+      );
 
       this.socket = io(rawUrl, {
-        transports: ['websocket','polling'],
-        upgrade: true,
+        transports: ["polling"],
+        upgrade: false,
+        withCredentials: true,
       });
-      
-      
 
-      this.socket.on('connect_error', (err) => {
-        console.error('SocketService: connect_error:', err?.message || err);
+      this.socket.on("connect_error", (err) => {
+        console.error("SocketService: connect_error:", err?.message || err);
       });
 
       this.setupEventListeners();
-      
-      this.socket.on('connect', () => {
-        console.log('SocketService: Connected to server with ID:', this.socket.id);
+
+      this.socket.on("connect", () => {
+        console.log(
+          "SocketService: Connected to server with ID:",
+          this.socket.id
+        );
         this.isConnected = true;
       });
-      
-      this.socket.on('disconnect', () => {
-        console.log('SocketService: Disconnected from server');
+
+      this.socket.on("disconnect", () => {
+        console.log("SocketService: Disconnected from server");
         this.isConnected = false;
       });
-      
+
       return this.socket;
     } catch (error) {
-      console.error('Failed to connect to server:', error);
-      
-      if (error.message && error.message.includes('Receiving end does not exist')) {
-        console.log('Ignoring Chrome extension error');
+      console.error("Failed to connect to server:", error);
+
+      if (
+        error.message &&
+        error.message.includes("Receiving end does not exist")
+      ) {
+        console.log("Ignoring Chrome extension error");
         return null;
       }
       throw error;
@@ -96,17 +111,15 @@ class SocketService {
   }
 
   setupEventListeners() {
-    
-
-    this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
+    this.socket.on("error", (error) => {
+      console.error("Socket error:", error);
       store.dispatch(setError(error));
     });
 
-    this.socket.on('poll_created', (pollData) => {
-      console.log('Poll created event received:', pollData);
+    this.socket.on("poll_created", (pollData) => {
+      console.log("Poll created event received:", pollData);
       store.dispatch(createPoll(pollData));
-      
+
       if (pollData.duration && pollData.startTime) {
         const elapsed = Date.now() - pollData.startTime;
         const timeRemaining = Math.max(0, pollData.duration - elapsed);
@@ -114,64 +127,71 @@ class SocketService {
       }
     });
 
-    this.socket.on('poll_update', (pollData) => {
+    this.socket.on("poll_update", (pollData) => {
       store.dispatch(setPoll(pollData));
       if (pollData.timeRemaining) {
         store.dispatch(setTimeRemaining(pollData.timeRemaining));
       }
-      
-      if (pollData.hasAnswered && pollData.userAnswer !== null && pollData.userAnswer !== undefined) {
+
+      if (
+        pollData.hasAnswered &&
+        pollData.userAnswer !== null &&
+        pollData.userAnswer !== undefined
+      ) {
         store.dispatch(setUserAnswer(pollData.userAnswer));
       }
     });
 
-    this.socket.on('poll_results', (resultsData) => {
-      console.log('Received poll results:', resultsData);
+    this.socket.on("poll_results", (resultsData) => {
+      console.log("Received poll results:", resultsData);
       store.dispatch(updateResults(resultsData));
     });
 
-    this.socket.on('poll_ended', (resultsData) => {
-      console.log('Poll ended with results:', resultsData);
+    this.socket.on("poll_ended", (resultsData) => {
+      console.log("Poll ended with results:", resultsData);
       store.dispatch(updateResults(resultsData));
       store.dispatch(endPoll());
     });
 
-    this.socket.on('users_list', (users) => {
-      console.log('Users list updated - Total:', users.length, 'Students:', users.filter(u => u.role === 'student').length);
+    this.socket.on("users_list", (users) => {
+      console.log(
+        "Users list updated - Total:",
+        users.length,
+        "Students:",
+        users.filter((u) => u.role === "student").length
+      );
       store.dispatch(setConnectedUsers(users));
       store.dispatch(setParticipants(users));
     });
 
-    this.socket.on('chat_message', (message) => {
+    this.socket.on("chat_message", (message) => {
       store.dispatch(addMessage(message));
     });
 
-    this.socket.on('chat_history', (messages) => {
+    this.socket.on("chat_history", (messages) => {
       console.log(`Received chat history: ${messages.length} messages`);
-      
+
       store.dispatch(setMessages(messages));
     });
 
-    this.socket.on('kicked_out', () => {
-      
-      window.location.href = '/kicked-out';
+    this.socket.on("kicked_out", () => {
+      window.location.href = "/kicked-out";
     });
 
-    this.socket.on('poll_history', (history) => {
-      console.log('Received poll history:', history);
-      console.log('Poll history length:', history.length);
+    this.socket.on("poll_history", (history) => {
+      console.log("Received poll history:", history);
+      console.log("Poll history length:", history.length);
       store.dispatch(setPollHistory(history));
     });
 
-    this.socket.on('session_ended', () => {
-      
-      window.location.href = '/session-ended';
+    this.socket.on("session_ended", () => {
+      window.location.href = "/session-ended";
     });
 
-    this.socket.on('session_ended_success', () => {
-      
-      
-      console.log('Session ended successfully - keeping poll data for final results');
+    this.socket.on("session_ended_success", () => {
+      console.log(
+        "Session ended successfully - keeping poll data for final results"
+      );
     });
   }
 
@@ -179,47 +199,54 @@ class SocketService {
     if (!this.socket) {
       this.connect();
     }
-    console.log('Joining as:', role, 'Name:', name, 'Connected:', this.socket.connected);
-    this.socket.emit('join', { name, role, studentId });
+    console.log(
+      "Joining as:",
+      role,
+      "Name:",
+      name,
+      "Connected:",
+      this.socket.connected
+    );
+    this.socket.emit("join", { name, role, studentId });
   }
 
   createPoll(pollData) {
     if (!this.socket) return;
-    this.socket.emit('create_poll', pollData);
+    this.socket.emit("create_poll", pollData);
   }
 
   submitAnswer(optionIndex) {
     if (!this.socket) return;
-    this.socket.emit('submit_answer', { optionIndex });
+    this.socket.emit("submit_answer", { optionIndex });
   }
 
   sendChatMessage(message) {
     if (!this.socket) return;
-    this.socket.emit('chat_message', { message });
+    this.socket.emit("chat_message", { message });
   }
 
   removeStudent(studentId) {
     if (!this.socket) return;
-    this.socket.emit('remove_student', { studentId });
+    this.socket.emit("remove_student", { studentId });
   }
 
   getPollHistory() {
     if (!this.socket) {
-      console.log('Socket not connected, cannot get poll history');
+      console.log("Socket not connected, cannot get poll history");
       return;
     }
-    console.log('Requesting poll history from server');
-    this.socket.emit('get_poll_history');
+    console.log("Requesting poll history from server");
+    this.socket.emit("get_poll_history");
   }
 
   endSession() {
     if (!this.socket) return;
-    this.socket.emit('end_session');
+    this.socket.emit("end_session");
   }
 
   endPoll() {
     if (!this.socket) return;
-    this.socket.emit('end_poll');
+    this.socket.emit("end_poll");
   }
 
   disconnect() {
