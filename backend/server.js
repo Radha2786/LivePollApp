@@ -17,6 +17,7 @@ const allowedOrigins = [
   'https://livepollapp.onrender.com',
 ];
 
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -25,30 +26,29 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,
 };
 
 const io = socketIo(server, {
   cors: {
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by Socket.IO CORS'));
-      }
-    },
-    methods: ['GET', 'POST'],
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
 });
+
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // handle preflight
+app.use(express.json());
 
 app.get('/', (req, res) => {
   res.send('Server is running successfully !! ');
 });
-
-app.use(cors(corsOptions));
-app.use(express.json());
 
 // Simple request logger
 app.use((req, res, next) => {
