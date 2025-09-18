@@ -39,7 +39,7 @@ class SocketService {
       console.log('SocketService: Creating new socket connection');
       
       // Determine server URL safely
-      const rawUrl ='https://livepollapp.onrender.com/';
+      const rawUrl ='https://livepollapp.onrender.com';
 
       let serverUrl = rawUrl;
       try {
@@ -61,8 +61,8 @@ class SocketService {
       console.log('SocketService: Using server URL:', serverUrl, 'transports:', transportsToUse, 'upgrade:', upgradeOption);
 
       this.socket = io(rawUrl, {
-        transports: ['websocket'],
-        upgrade: false,
+        transports: ['websocket','polling'],
+        upgrade: true,
       });
       
       
