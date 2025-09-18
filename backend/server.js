@@ -14,6 +14,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   'http://localhost:3000',
   'https://pollappp.netlify.app/',
+  'https://livepollapp.onrender.com',
 ];
 
 const corsOptions = {
